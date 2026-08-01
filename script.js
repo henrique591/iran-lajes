@@ -189,4 +189,97 @@ document.addEventListener('DOMContentLoaded', () => {
         counterElements.forEach(el => countObserver.observe(el));
     }
 
+    // --- Testimonials Carousel Auto-Slide & Logic ---
+    const track = document.getElementById('testimonials-track');
+    const cards = document.querySelectorAll('.testimonial-card');
+    const dotsContainer = document.getElementById('carousel-dots');
+    
+    if (track && cards.length > 0) {
+        let index = 0;
+        let interval = null;
+        
+        function getVisibleCount() {
+            if (window.innerWidth <= 600) return 1;
+            if (window.innerWidth <= 992) return 2;
+            return 3;
+        }
+        
+        function createDots() {
+            if (!dotsContainer) return;
+            dotsContainer.innerHTML = '';
+            const visibleCount = getVisibleCount();
+            const steps = cards.length - visibleCount + 1;
+            
+            for (let i = 0; i < steps; i++) {
+                const dot = document.createElement('span');
+                dot.classList.add('dot');
+                if (i === index) dot.classList.add('active');
+                dot.addEventListener('click', () => {
+                    index = i;
+                    updateCarousel();
+                    resetInterval();
+                });
+                dotsContainer.appendChild(dot);
+            }
+        }
+        
+        function updateDots(currentIndex, totalSteps) {
+            if (!dotsContainer) return;
+            if (dotsContainer.children.length !== totalSteps) {
+                createDots();
+                return;
+            }
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, i) => {
+                if (i === currentIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+        
+        function updateCarousel() {
+            const visibleCount = getVisibleCount();
+            const maxIndex = cards.length - visibleCount;
+            if (index > maxIndex) index = 0; // fallback to start if out of bounds on resize
+            
+            // Calculate dynamic width of one card + computed CSS gap
+            const cardWidth = cards[0].getBoundingClientRect().width;
+            const style = window.getComputedStyle(track);
+            const gap = parseFloat(style.columnGap || style.gap) || 0;
+            
+            const moveAmount = (cardWidth + gap) * index;
+            track.style.transform = `translateX(-${moveAmount}px)`;
+            
+            updateDots(index, maxIndex + 1);
+        }
+        
+        function startInterval() {
+            interval = setInterval(() => {
+                const visibleCount = getVisibleCount();
+                const maxIndex = cards.length - visibleCount;
+                index = (index >= maxIndex) ? 0 : index + 1;
+                updateCarousel();
+            }, 4000);
+        }
+        
+        function resetInterval() {
+            clearInterval(interval);
+            startInterval();
+        }
+        
+        // Initialize Carousel
+        createDots();
+        updateCarousel();
+        startInterval();
+        
+        // Redraw on window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                createDots();
+                updateCarousel();
+            }, 100);
+        });
+    }
+
 });
